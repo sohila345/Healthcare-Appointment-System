@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.active hr{
+    @apply block;
+}
+hr{
+    @apply hidden;
+}
+::-webkit-scrollbar{
+    @apply hidden;
+
+}
