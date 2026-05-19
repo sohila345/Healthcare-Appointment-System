@@ -183,7 +183,7 @@ exports.deleteReview = async (req, res) => {
     );
 
     await doctor.calcAverageRating();
-
+    await doctor.save();
     res.json({
       success: true,
       message: "Deleted",

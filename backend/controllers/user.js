@@ -1,8 +1,8 @@
 const User      = require("../models/User");
 const bcrypt    = require("bcryptjs");
-const jwt       = require("jsonwebtoken");
+//const jwt       = require("jsonwebtoken");
 const validator = require("validator");
-const { ACCESS_TOKEN_SECRET, ACCESS_TOKEN_EXPIRES_IN } = require("../config/config");
+const { generateTokens } = require("../middleware/token");
 
 // ─── REGISTER ────────────────────────────────────────────────────────────────
 const register = async (req, res) => {
@@ -32,7 +32,7 @@ const register = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-
+      
       role: req.body.role || "user",
       phone
     });
@@ -60,13 +60,10 @@ const login = async (req, res) => {
     if (!isValid)
       return res.status(400).json({ success: false, message: "Invalid email or password." });
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role,username: user.username},
-      ACCESS_TOKEN_SECRET,
-      { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
-    );
+    const { accessToken, refreshToken } = generateTokens(user);
 
-    res.json({ success: true, message: "Login successful.", token });
+    res.json({ success: true, message: "Login successful.", accessToken,
+      refreshToken, });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -77,13 +74,19 @@ const login = async (req, res) => {
 // For true server-side revocation, consider a token blocklist.
 const logout = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer")) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-    res.json({ message: "Logout successful" });
+    const userId = req.user.id;
+
+    await User.findByIdAndUpdate(userId, {
+      refreshToken: null
+    });
+
+    res.json({
+      success: true,
+      message: "Logged out successfully"
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
